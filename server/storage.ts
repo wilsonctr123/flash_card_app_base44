@@ -211,7 +211,13 @@ export class MemStorage implements IStorage {
 
   async createTopic(insertTopic: InsertTopic): Promise<Topic> {
     const id = this.currentTopicId++;
-    const topic: Topic = { ...insertTopic, id };
+    const topic: Topic = { 
+      ...insertTopic, 
+      id,
+      color: insertTopic.color || "#6366F1",
+      description: insertTopic.description || null,
+      icon: insertTopic.icon || "fas fa-book"
+    };
     this.topics.set(id, topic);
     return topic;
   }
@@ -269,7 +275,11 @@ export class MemStorage implements IStorage {
       easeFactor: 2.5,
       reviewCount: 0,
       successRate: 0,
-      isActive: true
+      isActive: true,
+      frontImage: insertFlashcard.frontImage || null,
+      backImage: insertFlashcard.backImage || null,
+      frontVideo: insertFlashcard.frontVideo || null,
+      backVideo: insertFlashcard.backVideo || null
     };
     this.flashcards.set(id, flashcard);
     return flashcard;

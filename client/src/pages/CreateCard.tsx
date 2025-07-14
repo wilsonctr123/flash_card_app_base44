@@ -267,17 +267,17 @@ export default function CreateCard() {
               </Card>
             </div>
 
-            <div className="flex justify-center">
+            <div className="flex justify-center mt-8 mb-8 pt-4 border-t border-border">
               <Button 
                 type="submit" 
-                className="gradient-primary text-white hover:opacity-90 px-8 py-3"
+                className="gradient-primary text-white hover:opacity-90 px-12 py-4 text-lg font-semibold shadow-lg"
                 disabled={createCardMutation.isPending}
               >
                 {createCardMutation.isPending ? (
                   "Creating..."
                 ) : (
                   <>
-                    <Plus size={16} className="mr-2" />
+                    <Plus size={20} className="mr-2" />
                     Create Flashcard
                   </>
                 )}
