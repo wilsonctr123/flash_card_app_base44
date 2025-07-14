@@ -10,10 +10,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Topics routes
   app.get("/api/topics", async (req, res) => {
     try {
-      const topics = await storage.getTopicsWithStats(currentUserId);
+      const topics = await storage.getTopics(currentUserId);
       res.json(topics);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch topics" });
+    }
+  });
+
+  app.get("/api/topics-with-stats", async (req, res) => {
+    try {
+      const topicsWithStats = await storage.getTopicsWithStats(currentUserId);
+      res.json(topicsWithStats);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch topics with stats" });
     }
   });
 

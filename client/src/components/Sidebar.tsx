@@ -19,6 +19,10 @@ export default function Sidebar() {
     queryKey: ['/api/topics'],
   });
 
+  const { data: topicsWithStats } = useQuery({
+    queryKey: ['/api/topics-with-stats'],
+  });
+
   return (
     <aside className="w-64 bg-white shadow-xl border-r border-border fixed h-full z-20">
       <div className="p-6">
@@ -56,8 +60,8 @@ export default function Sidebar() {
             Card Decks
           </h3>
           <div className="space-y-1">
-            {topics && topics.length > 0 ? (
-              topics.map((topic: any) => {
+            {topicsWithStats && topicsWithStats.length > 0 ? (
+              topicsWithStats.map((topic: any) => {
                 const topicPath = `/topics/${topic.id}`;
                 const isActive = location === topicPath;
                 return (
