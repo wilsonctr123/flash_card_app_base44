@@ -104,7 +104,7 @@ export default function StudySession() {
             </p>
             <div className="flex gap-4 justify-center">
               <Link href="/create">
-                <Button className="gradient-primary text-white">
+                <Button className="gradient-primary text-foreground">
                   Create New Cards
                 </Button>
               </Link>
@@ -145,7 +145,7 @@ export default function StudySession() {
             </div>
             <Button 
               onClick={startSession}
-              className="gradient-primary text-white hover:opacity-90 px-8 py-3"
+              className="gradient-primary text-foreground hover:opacity-90 px-8 py-3"
             >
               <Play size={16} className="mr-2" />
               Start Study Session

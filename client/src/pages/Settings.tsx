@@ -37,7 +37,7 @@ export default function Settings() {
                 <Input id="email" type="email" defaultValue="demo@memoryace.com" />
               </div>
             </div>
-            <Button className="gradient-primary text-white">Save Changes</Button>
+            <Button className="gradient-primary text-foreground">Save Changes</Button>
           </CardContent>
         </Card>
 

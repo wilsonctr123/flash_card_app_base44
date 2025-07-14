@@ -74,29 +74,33 @@ export default function StudyCard({ card, onRate, currentIndex, totalCards }: St
               <Button 
                 onClick={() => handleRate(1)}
                 className="bg-red-500 hover:bg-red-600 text-white"
+                size="sm"
               >
-                <RotateCcw size={16} className="mr-2" />
+                <RotateCcw size={14} className="mr-1" />
                 Again
               </Button>
               <Button 
                 onClick={() => handleRate(2)}
                 className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                size="sm"
               >
-                <Clock size={16} className="mr-2" />
+                <Clock size={14} className="mr-1" />
                 Hard
               </Button>
               <Button 
                 onClick={() => handleRate(3)}
                 className="bg-success hover:bg-success/90 text-white"
+                size="sm"
               >
-                <Check size={16} className="mr-2" />
+                <Check size={14} className="mr-1" />
                 Good
               </Button>
               <Button 
                 onClick={() => handleRate(4)}
                 className="bg-blue-500 hover:bg-blue-600 text-white"
+                size="sm"
               >
-                <Rocket size={16} className="mr-2" />
+                <Rocket size={14} className="mr-1" />
                 Easy
               </Button>
             </div>

@@ -17,7 +17,7 @@ import { insertFlashcardSchema } from "@shared/schema";
 import { Image, Video, Plus } from "lucide-react";
 
 const formSchema = insertFlashcardSchema.extend({
-  topicId: z.coerce.number(),
+  topicId: z.coerce.number().positive("Please select a topic"),
 });
 
 export default function CreateCard() {
@@ -39,7 +39,7 @@ export default function CreateCard() {
       backImage: "",
       frontVideo: "",
       backVideo: "",
-      topicId: 0,
+      topicId: undefined, // No default topic
     },
   });
 
@@ -73,7 +73,7 @@ export default function CreateCard() {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    if (data.topicId === 0) {
+    if (!data.topicId || data.topicId === 0) {
       toast({
         title: "Error",
         description: "Please select a topic.",
@@ -81,6 +81,16 @@ export default function CreateCard() {
       });
       return;
     }
+    
+    if (!data.frontText.trim() || !data.backText.trim()) {
+      toast({
+        title: "Error",
+        description: "Please fill in both front and back text.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     createCardMutation.mutate(data);
   };
 
@@ -106,7 +116,7 @@ export default function CreateCard() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Topic</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                      <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString() || ""}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a topic" />

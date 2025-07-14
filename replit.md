@@ -7,6 +7,8 @@ MemoryAce is a modern web application for spaced repetition learning using flash
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+Project Priority: Functionality over aesthetics - user emphasized making features actually usable.
+UI: Clean, modern design with consistent color scheme and proper button styling.
 
 ## System Architecture
 
@@ -119,3 +121,23 @@ Implements a modified SM-2 algorithm with:
 - Connection pooling and error handling
 
 The application is designed for cloud deployment with minimal configuration, using modern serverless-compatible patterns throughout the stack.
+
+## Recent Changes (January 2025)
+
+### January 14, 2025 - Major Functionality Fixes
+- Fixed Create Flashcard form validation and submission
+- Corrected topic selection with proper number coercion
+- Updated all button text colors from white to foreground for consistency
+- Fixed sidebar navigation warnings by removing nested anchor tags
+- Improved form validation with better error messages
+- Made all primary buttons use consistent styling
+- Fixed study card rating functionality
+- Added proper API integration for topic and flashcard creation
+- Enhanced user feedback with toast notifications
+
+### Key Fixes Applied
+- Form submissions now work properly across all pages
+- Topic creation includes proper validation and API calls
+- Study session buttons and ratings are functional
+- Consistent button styling throughout the application
+- Better form validation with meaningful error messages

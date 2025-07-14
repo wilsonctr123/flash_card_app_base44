@@ -144,7 +144,7 @@ export default function Dashboard() {
                 
                 <div className="flex items-center justify-between">
                   <Link href="/study">
-                    <Button className="gradient-primary text-white hover:opacity-90">
+                    <Button className="gradient-primary text-foreground hover:opacity-90">
                       <Play size={16} className="mr-2" />
                       Start Study Session
                     </Button>

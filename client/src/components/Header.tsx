@@ -27,7 +27,7 @@ export default function Header({ title, description, showCreateButton = true }: 
           </Button>
           {showCreateButton && (
             <Link href="/create">
-              <Button className="gradient-primary text-white hover:opacity-90">
+              <Button className="gradient-primary text-foreground hover:opacity-90">
                 <Plus size={16} className="mr-2" />
                 New Card
               </Button>

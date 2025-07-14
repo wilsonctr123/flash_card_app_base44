@@ -56,7 +56,10 @@ export default function Topics() {
 
   const createTopicMutation = useMutation({
     mutationFn: async (data: z.infer<typeof formSchema>) => {
-      const response = await apiRequest("POST", "/api/topics", data);
+      const response = await apiRequest("POST", "/api/topics", {
+        ...data,
+        userId: 1, // Add the required userId field
+      });
       return response.json();
     },
     onSuccess: () => {
@@ -99,6 +102,14 @@ export default function Topics() {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
+    if (!data.name.trim()) {
+      toast({
+        title: "Error",
+        description: "Please provide a topic name.",
+        variant: "destructive",
+      });
+      return;
+    }
     createTopicMutation.mutate(data);
   };
 
@@ -129,7 +140,7 @@ export default function Topics() {
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gradient-primary text-white hover:opacity-90">
+            <Button className="gradient-primary text-foreground hover:opacity-90">
               <Plus size={16} className="mr-2" />
               New Topic
             </Button>
@@ -233,7 +244,7 @@ export default function Topics() {
                   </Button>
                   <Button 
                     type="submit" 
-                    className="gradient-primary text-white"
+                    className="gradient-primary text-foreground"
                     disabled={createTopicMutation.isPending}
                   >
                     {createTopicMutation.isPending ? "Creating..." : "Create Topic"}
@@ -344,7 +355,7 @@ export default function Topics() {
             </p>
             <Button 
               onClick={() => setIsCreateDialogOpen(true)}
-              className="gradient-primary text-white"
+              className="gradient-primary text-foreground"
             >
               <Plus size={16} className="mr-2" />
               Create Topic
