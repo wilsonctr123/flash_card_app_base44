@@ -17,9 +17,9 @@ import { insertFlashcardSchema } from "@shared/schema";
 import { Image, Video, Plus } from "lucide-react";
 
 const formSchema = insertFlashcardSchema.extend({
-  topicId: z.coerce.number().min(1, "Please select a topic"),
-  frontText: z.string().min(1, "Front text is required"),
-  backText: z.string().min(1, "Back text is required"),
+  topicId: z.coerce.number().optional(),
+  frontText: z.string().optional(),
+  backText: z.string().optional(),
 });
 
 export default function CreateCard() {
@@ -77,6 +77,7 @@ export default function CreateCard() {
   const onSubmit = (data: z.infer<typeof formSchema>) => {
     console.log("Form submitted with data:", data);
     console.log("Form errors:", form.formState.errors);
+    console.log("onSubmit called successfully!");
     
     createCardMutation.mutate(data);
   };
@@ -91,7 +92,11 @@ export default function CreateCard() {
 
       <div className="max-w-4xl mx-auto">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8" noValidate>
+          <form onSubmit={(e) => {
+            e.preventDefault();
+            console.log("Form onSubmit event triggered");
+            form.handleSubmit(onSubmit)(e);
+          }} className="space-y-8" noValidate>
             <Card className="border-border">
               <CardHeader>
                 <CardTitle>Card Details</CardTitle>
@@ -269,6 +274,18 @@ export default function CreateCard() {
                 type="submit" 
                 className="gradient-primary text-foreground hover:opacity-90 px-12 py-4 text-lg font-semibold shadow-lg"
                 disabled={createCardMutation.isPending}
+                onClick={(e) => {
+                  console.log("Button clicked");
+                  console.log("Form valid:", form.formState.isValid);
+                  console.log("Form errors:", form.formState.errors);
+                  console.log("Form values:", form.getValues());
+                  // Try manual submission
+                  const values = form.getValues();
+                  if (values.frontText && values.backText && values.topicId) {
+                    console.log("Manually calling onSubmit");
+                    onSubmit(values as any);
+                  }
+                }}
               >
                 {createCardMutation.isPending ? (
                   "Creating..."
