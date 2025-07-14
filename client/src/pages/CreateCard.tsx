@@ -270,7 +270,7 @@ export default function CreateCard() {
             <div className="flex justify-center mt-8 mb-8 pt-4 border-t border-border">
               <Button 
                 type="submit" 
-                className="gradient-primary text-white hover:opacity-90 px-12 py-4 text-lg font-semibold shadow-lg"
+                className="gradient-primary text-foreground hover:opacity-90 px-12 py-4 text-lg font-semibold shadow-lg"
                 disabled={createCardMutation.isPending}
               >
                 {createCardMutation.isPending ? (
