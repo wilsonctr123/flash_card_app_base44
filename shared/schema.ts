@@ -1,12 +1,27 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, varchar, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Session storage table for Replit Auth
+export const sessions = pgTable(
+  "sessions",
+  {
+    sid: varchar("sid").primaryKey(),
+    sess: jsonb("sess").notNull(),
+    expire: timestamp("expire").notNull(),
+  },
+  (table) => [index("IDX_session_expire").on(table.expire)],
+);
+
+// User storage table for Replit Auth
 export const users = pgTable("users", {
-  id: serial("id").primaryKey(),
-  username: text("username").notNull().unique(),
-  email: text("email").notNull().unique(),
-  name: text("name").notNull(),
+  id: varchar("id").primaryKey().notNull(),
+  email: varchar("email").unique(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  profileImageUrl: varchar("profile_image_url"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const topics = pgTable("topics", {
@@ -15,7 +30,7 @@ export const topics = pgTable("topics", {
   description: text("description"),
   color: text("color").notNull().default("#6366F1"),
   icon: text("icon").notNull().default("fas fa-book"),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
 });
 
 export const flashcards = pgTable("flashcards", {
@@ -27,7 +42,7 @@ export const flashcards = pgTable("flashcards", {
   frontVideo: text("front_video"),
   backVideo: text("back_video"),
   topicId: integer("topic_id").notNull(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   difficulty: integer("difficulty").notNull().default(0), // 0-4 scale
   nextReview: timestamp("next_review").notNull(),
   interval: integer("interval").notNull().default(1), // days
@@ -40,7 +55,7 @@ export const flashcards = pgTable("flashcards", {
 
 export const studySessions = pgTable("study_sessions", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   cardId: integer("card_id").notNull(),
   rating: integer("rating").notNull(), // 1-4 (again, hard, good, easy)
   responseTime: integer("response_time").notNull(), // milliseconds
@@ -49,7 +64,7 @@ export const studySessions = pgTable("study_sessions", {
 
 export const userStats = pgTable("user_stats", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
+  userId: varchar("user_id").notNull(),
   totalCards: integer("total_cards").notNull().default(0),
   cardsReviewed: integer("cards_reviewed").notNull().default(0),
   studyStreak: integer("study_streak").notNull().default(0),
@@ -80,6 +95,7 @@ export type StudySession = typeof studySessions.$inferSelect;
 export type UserStats = typeof userStats.$inferSelect;
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
+export type UpsertUser = typeof users.$inferInsert;
 export type InsertTopic = z.infer<typeof insertTopicSchema>;
 export type InsertFlashcard = z.infer<typeof insertFlashcardSchema>;
 export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;

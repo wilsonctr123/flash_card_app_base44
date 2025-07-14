@@ -3,32 +3,49 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertTopicSchema, insertFlashcardSchema, insertStudySessionSchema } from "@shared/schema";
 import { z } from "zod";
+import { setupAuth, isAuthenticated } from "./replitAuth";
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  const currentUserId = 1; // For demo purposes, using a fixed user ID
+  // Auth middleware
+  await setupAuth(app);
+
+  // Auth routes
+  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.claims.sub;
+      const user = await storage.getUser(userId);
+      res.json(user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
 
   // Topics routes
-  app.get("/api/topics", async (req, res) => {
+  app.get("/api/topics", isAuthenticated, async (req: any, res) => {
     try {
-      const topics = await storage.getTopics(currentUserId);
+      const userId = req.user.claims.sub;
+      const topics = await storage.getTopics(userId);
       res.json(topics);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch topics" });
     }
   });
 
-  app.get("/api/topics-with-stats", async (req, res) => {
+  app.get("/api/topics-with-stats", isAuthenticated, async (req: any, res) => {
     try {
-      const topicsWithStats = await storage.getTopicsWithStats(currentUserId);
+      const userId = req.user.claims.sub;
+      const topicsWithStats = await storage.getTopicsWithStats(userId);
       res.json(topicsWithStats);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch topics with stats" });
     }
   });
 
-  app.post("/api/topics", async (req, res) => {
+  app.post("/api/topics", isAuthenticated, async (req: any, res) => {
     try {
-      const topicData = insertTopicSchema.parse({ ...req.body, userId: currentUserId });
+      const userId = req.user.claims.sub;
+      const topicData = insertTopicSchema.parse({ ...req.body, userId });
       const topic = await storage.createTopic(topicData);
       res.json(topic);
     } catch (error) {
@@ -40,7 +57,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/topics/:id", async (req, res) => {
+  app.put("/api/topics/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
@@ -55,7 +72,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/topics/:id", async (req, res) => {
+  app.delete("/api/topics/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteTopic(id);
@@ -70,25 +87,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Flashcards routes
-  app.get("/api/flashcards", async (req, res) => {
+  app.get("/api/flashcards", isAuthenticated, async (req: any, res) => {
     try {
-      const flashcards = await storage.getFlashcardsWithTopics(currentUserId);
+      const userId = req.user.claims.sub;
+      const flashcards = await storage.getFlashcardsWithTopics(userId);
       res.json(flashcards);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch flashcards" });
     }
   });
 
-  app.get("/api/flashcards/due", async (req, res) => {
+  app.get("/api/flashcards/due", isAuthenticated, async (req: any, res) => {
     try {
-      const dueCards = await storage.getDueFlashcards(currentUserId);
+      const userId = req.user.claims.sub;
+      const dueCards = await storage.getDueFlashcards(userId);
       res.json(dueCards);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch due cards" });
     }
   });
 
-  app.get("/api/flashcards/by-topic/:topicId", async (req, res) => {
+  app.get("/api/flashcards/by-topic/:topicId", isAuthenticated, async (req: any, res) => {
     try {
       const topicId = parseInt(req.params.topicId);
       const flashcards = await storage.getFlashcardsByTopic(topicId);
@@ -98,9 +117,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/flashcards", async (req, res) => {
+  app.post("/api/flashcards", isAuthenticated, async (req: any, res) => {
     try {
-      const cardData = insertFlashcardSchema.parse({ ...req.body, userId: currentUserId });
+      const userId = req.user.claims.sub;
+      const cardData = insertFlashcardSchema.parse({ ...req.body, userId });
       const flashcard = await storage.createFlashcard(cardData);
       res.json(flashcard);
     } catch (error) {
@@ -112,7 +132,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.put("/api/flashcards/:id", async (req, res) => {
+  app.put("/api/flashcards/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const updateData = req.body;
@@ -127,7 +147,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.delete("/api/flashcards/:id", async (req, res) => {
+  app.delete("/api/flashcards/:id", isAuthenticated, async (req: any, res) => {
     try {
       const id = parseInt(req.params.id);
       const deleted = await storage.deleteFlashcard(id);
@@ -142,7 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Study session routes
-  app.post("/api/study-sessions", async (req, res) => {
+  app.post("/api/study-sessions", isAuthenticated, async (req: any, res) => {
     try {
       const sessionData = insertStudySessionSchema.parse(req.body);
       const session = await storage.createStudySession(sessionData);
@@ -197,9 +217,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // User stats routes
-  app.get("/api/user-stats", async (req, res) => {
+  app.get("/api/user-stats", isAuthenticated, async (req: any, res) => {
     try {
-      const stats = await storage.getUserStats(currentUserId);
+      const userId = req.user.claims.sub;
+      const stats = await storage.getUserStats(userId);
       if (!stats) {
         res.status(404).json({ message: "User stats not found" });
         return;
@@ -211,12 +232,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Analytics routes
-  app.get("/api/analytics/dashboard", async (req, res) => {
+  app.get("/api/analytics/dashboard", isAuthenticated, async (req: any, res) => {
     try {
-      const stats = await storage.getUserStats(currentUserId);
-      const dueCards = await storage.getDueFlashcards(currentUserId);
-      const topics = await storage.getTopicsWithStats(currentUserId);
-      const allCards = await storage.getFlashcards(currentUserId);
+      const userId = req.user.claims.sub;
+      const stats = await storage.getUserStats(userId);
+      const dueCards = await storage.getDueFlashcards(userId);
+      const topics = await storage.getTopicsWithStats(userId);
+      const allCards = await storage.getFlashcards(userId);
 
       // Calculate spaced repetition timeline
       const now = new Date();

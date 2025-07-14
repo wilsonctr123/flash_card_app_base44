@@ -14,41 +14,41 @@ import {
   type InsertFlashcard, 
   type InsertStudySession, 
   type InsertUserStats,
+  type UpsertUser,
   type FlashcardWithTopic,
   type TopicWithStats
 } from "@shared/schema";
 
 export interface IStorage {
-  // Users
-  getUser(id: number): Promise<User | undefined>;
-  getUserByUsername(username: string): Promise<User | undefined>;
-  createUser(user: InsertUser): Promise<User>;
+  // Users (Required for Replit Auth)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
 
   // Topics
-  getTopics(userId: number): Promise<Topic[]>;
-  getTopicsWithStats(userId: number): Promise<TopicWithStats[]>;
+  getTopics(userId: string): Promise<Topic[]>;
+  getTopicsWithStats(userId: string): Promise<TopicWithStats[]>;
   getTopic(id: number): Promise<Topic | undefined>;
   createTopic(topic: InsertTopic): Promise<Topic>;
   updateTopic(id: number, topic: Partial<Topic>): Promise<Topic | undefined>;
   deleteTopic(id: number): Promise<boolean>;
 
   // Flashcards
-  getFlashcards(userId: number): Promise<Flashcard[]>;
-  getFlashcardsWithTopics(userId: number): Promise<FlashcardWithTopic[]>;
+  getFlashcards(userId: string): Promise<Flashcard[]>;
+  getFlashcardsWithTopics(userId: string): Promise<FlashcardWithTopic[]>;
   getFlashcardsByTopic(topicId: number): Promise<Flashcard[]>;
-  getDueFlashcards(userId: number): Promise<FlashcardWithTopic[]>;
+  getDueFlashcards(userId: string): Promise<FlashcardWithTopic[]>;
   getFlashcard(id: number): Promise<Flashcard | undefined>;
   createFlashcard(flashcard: InsertFlashcard): Promise<Flashcard>;
   updateFlashcard(id: number, flashcard: Partial<Flashcard>): Promise<Flashcard | undefined>;
   deleteFlashcard(id: number): Promise<boolean>;
 
   // Study Sessions
-  getStudySessions(userId: number): Promise<StudySession[]>;
+  getStudySessions(userId: string): Promise<StudySession[]>;
   createStudySession(session: InsertStudySession): Promise<StudySession>;
 
   // User Stats
-  getUserStats(userId: number): Promise<UserStats | undefined>;
-  updateUserStats(userId: number, stats: Partial<UserStats>): Promise<UserStats | undefined>;
+  getUserStats(userId: string): Promise<UserStats | undefined>;
+  updateUserStats(userId: string, stats: Partial<UserStats>): Promise<UserStats | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -332,4 +332,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+import { DatabaseStorage } from "./databaseStorage";
+
+// Use DatabaseStorage for production with authentication
+export const storage = new DatabaseStorage();
