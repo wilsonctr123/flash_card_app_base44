@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Brain, Home, Plus, Play, BarChart3, Tags, Settings, User } from "lucide-react";
+import { Brain, Home, Plus, Play, BarChart3, Tags, Settings, User, Folder } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
@@ -13,6 +14,10 @@ const navigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  
+  const { data: topics } = useQuery({
+    queryKey: ['/api/topics'],
+  });
 
   return (
     <aside className="w-64 bg-white shadow-xl border-r border-border fixed h-full z-20">
@@ -44,6 +49,46 @@ export default function Sidebar() {
             );
           })}
         </nav>
+
+        {/* Card Decks Section */}
+        <div className="mt-8 mb-4">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide px-4 mb-3">
+            Card Decks
+          </h3>
+          <div className="space-y-1">
+            {topics && topics.length > 0 ? (
+              topics.map((topic: any) => {
+                const topicPath = `/topics/${topic.id}`;
+                const isActive = location === topicPath;
+                return (
+                  <Link key={topic.id} href={topicPath}>
+                    <div
+                      className={cn(
+                        "flex items-center space-x-3 px-4 py-2 rounded-lg text-sm transition-colors cursor-pointer",
+                        isActive
+                          ? "text-primary bg-primary/10"
+                          : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      )}
+                    >
+                      <div 
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: topic.color || '#6366F1' }}
+                      />
+                      <span className="truncate">{topic.name}</span>
+                      <span className="ml-auto text-xs text-muted-foreground">
+                        {topic.cardCount || 0}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })
+            ) : (
+              <div className="px-4 py-2 text-sm text-muted-foreground">
+                No topics yet. Create your first topic!
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       <div className="absolute bottom-6 left-6 right-6">

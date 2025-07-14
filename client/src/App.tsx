@@ -8,6 +8,7 @@ import CreateCard from "@/pages/CreateCard";
 import StudySession from "@/pages/StudySession";
 import Analytics from "@/pages/Analytics";
 import Topics from "@/pages/Topics";
+import TopicDetail from "@/pages/TopicDetail";
 import Settings from "@/pages/Settings";
 import NotFound from "@/pages/not-found";
 import Sidebar from "@/components/Sidebar";
@@ -23,6 +24,7 @@ function Router() {
           <Route path="/study" component={StudySession} />
           <Route path="/analytics" component={Analytics} />
           <Route path="/topics" component={Topics} />
+          <Route path="/topics/:id" component={TopicDetail} />
           <Route path="/settings" component={Settings} />
           <Route component={NotFound} />
         </Switch>

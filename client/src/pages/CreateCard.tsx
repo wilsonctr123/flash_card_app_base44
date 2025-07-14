@@ -17,7 +17,9 @@ import { insertFlashcardSchema } from "@shared/schema";
 import { Image, Video, Plus } from "lucide-react";
 
 const formSchema = insertFlashcardSchema.extend({
-  topicId: z.coerce.number().positive("Please select a topic"),
+  topicId: z.coerce.number().min(1, "Please select a topic"),
+  frontText: z.string().min(1, "Front text is required"),
+  backText: z.string().min(1, "Back text is required"),
 });
 
 export default function CreateCard() {
@@ -39,7 +41,7 @@ export default function CreateCard() {
       backImage: "",
       frontVideo: "",
       backVideo: "",
-      topicId: undefined, // No default topic
+      topicId: 0, // No default topic
     },
   });
 
@@ -73,23 +75,8 @@ export default function CreateCard() {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    if (!data.topicId || data.topicId === 0) {
-      toast({
-        title: "Error",
-        description: "Please select a topic.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    if (!data.frontText.trim() || !data.backText.trim()) {
-      toast({
-        title: "Error",
-        description: "Please fill in both front and back text.",
-        variant: "destructive",
-      });
-      return;
-    }
+    console.log("Form submitted with data:", data);
+    console.log("Form errors:", form.formState.errors);
     
     createCardMutation.mutate(data);
   };
@@ -104,7 +91,7 @@ export default function CreateCard() {
 
       <div className="max-w-4xl mx-auto">
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8" noValidate>
             <Card className="border-border">
               <CardHeader>
                 <CardTitle>Card Details</CardTitle>

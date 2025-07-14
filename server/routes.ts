@@ -79,6 +79,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/flashcards/by-topic/:topicId", async (req, res) => {
+    try {
+      const topicId = parseInt(req.params.topicId);
+      const flashcards = await storage.getFlashcardsByTopic(topicId);
+      res.json(flashcards);
+    } catch (error) {
+      res.status(500).json({ message: "Failed to fetch flashcards for topic" });
+    }
+  });
+
   app.post("/api/flashcards", async (req, res) => {
     try {
       const cardData = insertFlashcardSchema.parse({ ...req.body, userId: currentUserId });
