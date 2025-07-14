@@ -1,0 +1,95 @@
+import { pgTable, text, serial, integer, boolean, timestamp, real } from "drizzle-orm/pg-core";
+import { createInsertSchema } from "drizzle-zod";
+import { z } from "zod";
+
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  email: text("email").notNull().unique(),
+  name: text("name").notNull(),
+});
+
+export const topics = pgTable("topics", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+  description: text("description"),
+  color: text("color").notNull().default("#6366F1"),
+  icon: text("icon").notNull().default("fas fa-book"),
+  userId: integer("user_id").notNull(),
+});
+
+export const flashcards = pgTable("flashcards", {
+  id: serial("id").primaryKey(),
+  frontText: text("front_text").notNull(),
+  backText: text("back_text").notNull(),
+  frontImage: text("front_image"),
+  backImage: text("back_image"),
+  frontVideo: text("front_video"),
+  backVideo: text("back_video"),
+  topicId: integer("topic_id").notNull(),
+  userId: integer("user_id").notNull(),
+  difficulty: integer("difficulty").notNull().default(0), // 0-4 scale
+  nextReview: timestamp("next_review").notNull(),
+  interval: integer("interval").notNull().default(1), // days
+  easeFactor: real("ease_factor").notNull().default(2.5),
+  reviewCount: integer("review_count").notNull().default(0),
+  successRate: real("success_rate").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const studySessions = pgTable("study_sessions", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  cardId: integer("card_id").notNull(),
+  rating: integer("rating").notNull(), // 1-4 (again, hard, good, easy)
+  responseTime: integer("response_time").notNull(), // milliseconds
+  sessionDate: timestamp("session_date").notNull().defaultNow(),
+});
+
+export const userStats = pgTable("user_stats", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  totalCards: integer("total_cards").notNull().default(0),
+  cardsReviewed: integer("cards_reviewed").notNull().default(0),
+  studyStreak: integer("study_streak").notNull().default(0),
+  lastStudyDate: timestamp("last_study_date"),
+  totalStudyTime: integer("total_study_time").notNull().default(0), // minutes
+  averageAccuracy: real("average_accuracy").notNull().default(0),
+});
+
+// Insert schemas
+export const insertUserSchema = createInsertSchema(users).omit({ id: true });
+export const insertTopicSchema = createInsertSchema(topics).omit({ id: true });
+export const insertFlashcardSchema = createInsertSchema(flashcards).omit({ 
+  id: true, 
+  nextReview: true, 
+  createdAt: true 
+});
+export const insertStudySessionSchema = createInsertSchema(studySessions).omit({ 
+  id: true, 
+  sessionDate: true 
+});
+export const insertUserStatsSchema = createInsertSchema(userStats).omit({ id: true });
+
+// Types
+export type User = typeof users.$inferSelect;
+export type Topic = typeof topics.$inferSelect;
+export type Flashcard = typeof flashcards.$inferSelect;
+export type StudySession = typeof studySessions.$inferSelect;
+export type UserStats = typeof userStats.$inferSelect;
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type InsertTopic = z.infer<typeof insertTopicSchema>;
+export type InsertFlashcard = z.infer<typeof insertFlashcardSchema>;
+export type InsertStudySession = z.infer<typeof insertStudySessionSchema>;
+export type InsertUserStats = z.infer<typeof insertUserStatsSchema>;
+
+// Additional types for frontend
+export type FlashcardWithTopic = Flashcard & { topic: Topic };
+export type TopicWithStats = Topic & { 
+  cardCount: number; 
+  accuracy: number; 
+  masteryPercentage: number;
+  dueCount: number;
+};

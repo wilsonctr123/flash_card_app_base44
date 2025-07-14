@@ -1,0 +1,119 @@
+import { useState } from "react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { RotateCcw, Clock, Check, Rocket } from "lucide-react";
+import type { FlashcardWithTopic } from "@shared/schema";
+
+interface StudyCardProps {
+  card: FlashcardWithTopic;
+  onRate: (rating: number) => void;
+  currentIndex: number;
+  totalCards: number;
+}
+
+export default function StudyCard({ card, onRate, currentIndex, totalCards }: StudyCardProps) {
+  const [isFlipped, setIsFlipped] = useState(false);
+
+  const handleRate = (rating: number) => {
+    onRate(rating);
+    setIsFlipped(false);
+  };
+
+  return (
+    <Card className="gradient-card border-border overflow-hidden hover-lift">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between mb-4">
+          <Badge variant="secondary" className="bg-primary/10 text-primary">
+            {card.topic.name}
+          </Badge>
+          <Badge variant="outline">
+            Due Now
+          </Badge>
+        </div>
+        
+        <div className="mb-6 min-h-[200px] flex items-center justify-center">
+          <div 
+            className="cursor-pointer text-center w-full"
+            onClick={() => setIsFlipped(!isFlipped)}
+          >
+            {!isFlipped ? (
+              <div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">
+                  {card.frontText}
+                </h3>
+                {card.frontImage && (
+                  <img 
+                    src={card.frontImage} 
+                    alt="Front" 
+                    className="max-w-full max-h-40 mx-auto rounded-lg mb-2"
+                  />
+                )}
+                <p className="text-muted-foreground">Click to reveal answer</p>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-2xl font-bold text-foreground mb-2">
+                  {card.backText}
+                </h3>
+                {card.backImage && (
+                  <img 
+                    src={card.backImage} 
+                    alt="Back" 
+                    className="max-w-full max-h-40 mx-auto rounded-lg mb-2"
+                  />
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {isFlipped && (
+          <div className="flex items-center justify-between">
+            <div className="flex space-x-3">
+              <Button 
+                onClick={() => handleRate(1)}
+                className="bg-red-500 hover:bg-red-600 text-white"
+              >
+                <RotateCcw size={16} className="mr-2" />
+                Again
+              </Button>
+              <Button 
+                onClick={() => handleRate(2)}
+                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+              >
+                <Clock size={16} className="mr-2" />
+                Hard
+              </Button>
+              <Button 
+                onClick={() => handleRate(3)}
+                className="bg-success hover:bg-success/90 text-white"
+              >
+                <Check size={16} className="mr-2" />
+                Good
+              </Button>
+              <Button 
+                onClick={() => handleRate(4)}
+                className="bg-blue-500 hover:bg-blue-600 text-white"
+              >
+                <Rocket size={16} className="mr-2" />
+                Easy
+              </Button>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              Card {currentIndex + 1} of {totalCards}
+            </span>
+          </div>
+        )}
+        
+        {!isFlipped && (
+          <div className="flex justify-end">
+            <span className="text-sm text-muted-foreground">
+              Card {currentIndex + 1} of {totalCards}
+            </span>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
