@@ -58,7 +58,7 @@ app.use((req, res, next) => {
   }
 
   // Serve the app - use different port in development if 5000 is taken
-  const port = process.env.PORT || (process.env.NODE_ENV === 'development' ? 3001 : 5000);
+  const port = process.env.PORT || 5000;
   server.listen({
     port: Number(port),
     host: "0.0.0.0", // Allow external connections for Bolt.new
