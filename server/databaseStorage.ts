@@ -34,8 +34,16 @@ import type { IStorage } from "./storage";
 export class DatabaseStorage implements IStorage {
   // Users (Required for Replit Auth)
   async getUser(id: string): Promise<User | undefined> {
+    console.log("🔧 DatabaseStorage.getUser called with id:", id);
+    try {
+      console.log("🔧 Executing database query...");
     const [user] = await db.select().from(users).where(eq(users.id, id));
+      console.log("🔧 Database query result:", user ? "found user" : "no user found");
     return user;
+    } catch (error) {
+      console.error("❌ Database query error:", error);
+      throw error;
+    }
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
