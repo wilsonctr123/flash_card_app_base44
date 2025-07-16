@@ -9,28 +9,44 @@ import { z } from "zod";
 import { devAuthMiddleware, isDevAuthenticated } from "./devAuth";
 import { setupDevUser } from "./devSetup";
 
+console.log("🔧 Loading routes.ts module...");
+
 // Use development auth in development mode
 const isDev = process.env.NODE_ENV === "development";
 // Auth middleware will be set conditionally below
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  console.log("🔧 Starting registerRoutes function...");
+  console.log("🔧 isDev:", isDev);
+  
   let finalAuthMiddleware;
   
   // Auth middleware - skip Replit auth in development
   if (!isDev) {
+    console.log("🔧 Setting up production auth...");
     const { setupAuth, isAuthenticated } = await import("./replitAuth");
     await setupAuth(app);
     finalAuthMiddleware = isAuthenticated;
   } else {
+    console.log("🔧 Setting up development auth...");
     // Setup development user in database
-    await setupDevUser();
+    try {
+      await setupDevUser();
+      console.log("✅ Development user setup complete");
+    } catch (error) {
+      console.error("❌ Error setting up development user:", error);
+      throw error;
+    }
     
     // Apply dev auth middleware globally in development
     app.use(devAuthMiddleware);
     finalAuthMiddleware = isDevAuthenticated;
   }
+  
+  console.log("🔧 Auth middleware configured");
 
   // Auth routes
+  console.log("🔧 Setting up auth routes...");
   app.get('/api/auth/user', finalAuthMiddleware, async (req: any, res) => {
     try {
       const userId = req.user.claims.sub;
