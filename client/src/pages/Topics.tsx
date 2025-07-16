@@ -62,7 +62,7 @@ export default function Topics() {
     mutationFn: async (data: z.infer<typeof formSchema>) => {
       const response = await apiRequest("POST", "/api/topics", {
         ...data,
-        userId: user?.id || "", // Add the required userId field
+        userId: user?.id || (() => { throw new Error("User not authenticated") })(),
       });
       return response.json();
     },

@@ -1,6 +1,9 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { createErrorHandler, asyncHandler, validateAuth, ValidationError, NotFoundError } from "./middleware/errorHandler";
+import { studySessionService } from "./services/StudySessionService";
+import { ValidationService } from "./services/ValidationService";
 import { insertTopicSchema, insertFlashcardSchema, insertStudySessionSchema, insertUserSettingsSchema, updateUserSettingsSchema, insertSubtopicSchema } from "@shared/schema";
 import { z } from "zod";
 import { devAuthMiddleware, isDevAuthenticated } from "./devAuth";
@@ -55,15 +58,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Topics routes
-  app.get("/api/topics", finalAuthMiddleware, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const topics = await storage.getTopics(userId);
-      res.json(topics);
-    } catch (error) {
-      res.status(500).json({ message: "Failed to fetch topics" });
-    }
-  });
+  app.get("/api/topics", finalAuthMiddleware, asyncHandler(async (req: any, res) => {
+    const userId = validateAuth(req);
+    const topics = await storage.getTopics(userId);
+    res.json(topics);
+  }));
 
   app.get("/api/topics-with-stats", finalAuthMiddleware, async (req: any, res) => {
     try {
@@ -75,20 +74,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/topics", finalAuthMiddleware, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const topicData = insertTopicSchema.parse({ ...req.body, userId });
-      const topic = await storage.createTopic(topicData);
-      res.json(topic);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid topic data", errors: error.errors });
-      } else {
-        res.status(500).json({ message: "Failed to create topic" });
-      }
-    }
-  });
+  app.post("/api/topics", finalAuthMiddleware, asyncHandler(async (req: any, res) => {
+    const userId = validateAuth(req);
+    const topicData = ValidationService.validateSchema(insertTopicSchema, { ...req.body, userId });
+    const topic = await storage.createTopic(topicData);
+    res.json(topic);
+  }));
 
   app.get("/api/topics/:id", finalAuthMiddleware, async (req: any, res) => {
     try {
@@ -368,22 +359,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Only add personalBestStreak if the column exists
         if ('personalBestStreak' in userStats) {
-          updateData.personalBestStreak = Math.max(newStreak, userStats.personalBestStreak || 0);
-        }
-        
-        await storage.updateUserStats(userId, updateData);
-      }
+  app.post("/api/study-sessions", finalAuthMiddleware, asyncHandler(async (req: any, res) => {
+    const userId = validateAuth(req);
+    const sessionData = ValidationService.validateSchema(insertStudySessionSchema, { ...req.body, userId });
+    const session = await studySessionService.createStudySession(sessionData);
+    res.json(session);
+  }));
 
-      res.json(session);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        res.status(400).json({ message: "Invalid session data", errors: error.errors });
-      } else {
-        console.error("Study session error:", error);
-        res.status(500).json({ message: "Failed to create study session" });
-      }
-    }
-  });
+  // Add error handler middleware
+  app.use(createErrorHandler());
 
   // User stats routes
   app.get("/api/user-stats", finalAuthMiddleware, async (req: any, res) => {
