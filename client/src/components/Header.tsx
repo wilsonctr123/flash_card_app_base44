@@ -24,14 +24,13 @@ export default function Header({ title, description, showCreateButton = true }: 
             size="icon" 
             className="relative"
             onClick={() => {
-              // Mock notification handler - in real app this would open notifications
-              alert("No new notifications");
+              // TODO: Implement notification panel
+              // For now, just show a message
+              alert("Notifications coming soon!");
             }}
           >
             <Bell size={20} />
-            <span className="absolute -top-1 -right-1 w-5 h-5 bg-warning text-white text-xs rounded-full flex items-center justify-center">
-              3
-            </span>
+            {/* TODO: Add real notification count */}
           </Button>
           {showCreateButton && (
             <Link href="/create">

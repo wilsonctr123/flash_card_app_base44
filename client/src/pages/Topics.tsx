@@ -13,9 +13,11 @@ import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { apiRequest } from "@/lib/queryClient";
 import { insertTopicSchema } from "@shared/schema";
-import { Plus, Edit, Trash2, BookOpen, Target, TrendingUp } from "lucide-react";
+import { Plus, Edit, Trash2, BookOpen, Target, TrendingUp, FolderOpen } from "lucide-react";
+import { Link } from "wouter";
 
 const formSchema = insertTopicSchema.omit({ userId: true });
 
@@ -37,11 +39,13 @@ const colorOptions = [
 
 export default function Topics() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [editingTopic, setEditingTopic] = useState<any>(null);
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   const { data: topics, isLoading } = useQuery({
-    queryKey: ['/api/topics'],
+    queryKey: ['/api/topics-with-stats'],
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -58,7 +62,7 @@ export default function Topics() {
     mutationFn: async (data: z.infer<typeof formSchema>) => {
       const response = await apiRequest("POST", "/api/topics", {
         ...data,
-        userId: 1, // Add the required userId field
+        userId: user?.id || "", // Add the required userId field
       });
       return response.json();
     },
@@ -69,12 +73,35 @@ export default function Topics() {
       });
       form.reset();
       setIsCreateDialogOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/topics-with-stats'] });
     },
     onError: () => {
       toast({
         title: "Error",
         description: "Failed to create topic. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const updateTopicMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number; data: z.infer<typeof formSchema> }) => {
+      const response = await apiRequest("PUT", `/api/topics/${id}`, data);
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Topic updated successfully!",
+      });
+      setEditingTopic(null);
+      form.reset();
+      queryClient.invalidateQueries({ queryKey: ['/api/topics-with-stats'] });
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to update topic. Please try again.",
         variant: "destructive",
       });
     },
@@ -90,7 +117,7 @@ export default function Topics() {
         title: "Success",
         description: "Topic deleted successfully!",
       });
-      queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/topics-with-stats'] });
     },
     onError: () => {
       toast({
@@ -110,7 +137,27 @@ export default function Topics() {
       });
       return;
     }
-    createTopicMutation.mutate(data);
+    
+    if (editingTopic) {
+      updateTopicMutation.mutate({ id: editingTopic.id, data });
+    } else {
+      createTopicMutation.mutate(data);
+    }
+  };
+
+  const handleEdit = (topic: any) => {
+    setEditingTopic(topic);
+    form.setValue("name", topic.name);
+    form.setValue("description", topic.description || "");
+    form.setValue("color", topic.color || "#6366F1");
+    form.setValue("icon", topic.icon || "fas fa-book");
+    setIsCreateDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsCreateDialogOpen(false);
+    setEditingTopic(null);
+    form.reset();
   };
 
   if (isLoading) {
@@ -138,7 +185,7 @@ export default function Topics() {
           </p>
         </div>
         
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={(open) => !open && handleCloseDialog()}>
           <DialogTrigger asChild>
             <Button className="gradient-primary text-foreground hover:opacity-90">
               <Plus size={16} className="mr-2" />
@@ -147,7 +194,7 @@ export default function Topics() {
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Create New Topic</DialogTitle>
+              <DialogTitle>{editingTopic ? "Edit Topic" : "Create New Topic"}</DialogTitle>
             </DialogHeader>
             
             <Form {...form}>
@@ -238,16 +285,19 @@ export default function Topics() {
                   <Button 
                     type="button" 
                     variant="outline" 
-                    onClick={() => setIsCreateDialogOpen(false)}
+                    onClick={handleCloseDialog}
                   >
                     Cancel
                   </Button>
                   <Button 
                     type="submit" 
                     className="gradient-primary text-foreground"
-                    disabled={createTopicMutation.isPending}
+                    disabled={createTopicMutation.isPending || updateTopicMutation.isPending}
                   >
-                    {createTopicMutation.isPending ? "Creating..." : "Create Topic"}
+                    {editingTopic 
+                      ? (updateTopicMutation.isPending ? "Updating..." : "Update Topic")
+                      : (createTopicMutation.isPending ? "Creating..." : "Create Topic")
+                    }
                   </Button>
                 </div>
               </form>
@@ -259,8 +309,9 @@ export default function Topics() {
       {/* Topics Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {topics?.map((topic: any) => (
-          <Card key={topic.id} className="hover-lift border-border">
-            <CardHeader className="pb-4">
+          <Link key={topic.id} href={`/topic/${topic.id}`}>
+            <Card className="hover-lift border-border cursor-pointer h-full">
+              <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div 
@@ -279,14 +330,27 @@ export default function Topics() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleEdit(topic);
+                    }}
+                  >
                     <Edit size={14} />
                   </Button>
                   <Button 
                     variant="ghost" 
                     size="icon" 
                     className="h-8 w-8 text-destructive hover:text-destructive"
-                    onClick={() => deleteTopicMutation.mutate(topic.id)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      deleteTopicMutation.mutate(topic.id);
+                    }}
                   >
                     <Trash2 size={14} />
                   </Button>
@@ -323,6 +387,13 @@ export default function Topics() {
                 </div>
               </div>
               
+              {topic.subtopicCount > 0 && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-3">
+                  <FolderOpen size={14} />
+                  <span>{topic.subtopicCount} subtopic{topic.subtopicCount > 1 ? 's' : ''}</span>
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Mastery Progress</span>
@@ -339,7 +410,8 @@ export default function Topics() {
                 </Badge>
               )}
             </CardContent>
-          </Card>
+            </Card>
+          </Link>
         ))}
       </div>
 

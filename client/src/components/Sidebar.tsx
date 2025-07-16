@@ -1,7 +1,9 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
-import { Brain, Home, Plus, Play, BarChart3, Tags, Settings, User, Folder } from "lucide-react";
+import { Brain, Home, Plus, Play, BarChart3, Tags, Settings, User, Folder, LogOut } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 
 const navigation = [
   { name: "Dashboard", href: "/", icon: Home },
@@ -14,6 +16,8 @@ const navigation = [
 
 export default function Sidebar() {
   const [location] = useLocation();
+  const isDev = import.meta.env.DEV;
+  const { user } = useAuth();
   
   const { data: topics } = useQuery({
     queryKey: ['/api/topics'],
@@ -22,11 +26,29 @@ export default function Sidebar() {
   const { data: topicsWithStats } = useQuery({
     queryKey: ['/api/topics-with-stats'],
   });
+  
+  const { data: userSettings } = useQuery({
+    queryKey: ['/api/settings'],
+  });
+
+  const handleLogout = () => {
+    if (isDev) {
+      // In development, since auth is always on, we need to use a different approach
+      // Clear any local storage and force a page that doesn't require auth
+      window.location.href = '/landing';
+    } else {
+      // In production, use Replit logout
+      window.location.href = '/api/logout';
+    }
+  };
 
   return (
     <aside className="w-64 bg-white shadow-xl border-r border-border fixed h-full z-20">
       <div className="p-6">
-        <div className="flex items-center space-x-3 mb-8">
+        <div 
+          className="flex items-center space-x-3 mb-8 cursor-pointer hover:opacity-80 transition-opacity"
+          onClick={handleLogout}
+        >
           <div className="w-10 h-10 gradient-primary rounded-xl flex items-center justify-center">
             <Brain className="text-white text-lg" />
           </div>
@@ -101,10 +123,25 @@ export default function Sidebar() {
             <div className="w-8 h-8 bg-white/20 rounded-full flex items-center justify-center">
               <User size={16} />
             </div>
-            <div>
-              <p className="font-medium text-sm">Demo User</p>
-              <p className="text-xs text-white/80">Pro Member</p>
+            <div className="flex-1">
+              <p className="font-medium text-sm">
+                {userSettings?.displayName || user?.name || user?.username || "User"}
+              </p>
+              <p className="text-xs text-white/80">
+                {user?.email || "member@memoryace.com"}
+              </p>
             </div>
+            {isDev && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleLogout}
+                className="hover:bg-white/20 text-white p-1"
+                title="Logout"
+              >
+                <LogOut size={16} />
+              </Button>
+            )}
           </div>
         </div>
       </div>

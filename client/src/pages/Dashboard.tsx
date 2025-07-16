@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { useSettings } from "@/hooks/useSettings";
 import { 
   BookOpen, 
   Clock, 
@@ -20,6 +21,10 @@ export default function Dashboard() {
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['/api/analytics/dashboard'],
   });
+  const { data: upcomingReviews } = useQuery({
+    queryKey: ['/api/analytics/upcoming-reviews'],
+  });
+  const { settings } = useSettings();
 
   if (isLoading) {
     return (
@@ -35,6 +40,18 @@ export default function Dashboard() {
 
   const stats = analytics?.stats;
   const timeline = analytics?.timeline || {};
+  
+  // Calculate daily goal progress
+  const dailyGoal = settings?.dailyGoal || 25;
+  const cardsReviewedToday = stats?.cardsReviewedToday || 0;
+  const goalProgress = Math.min((cardsReviewedToday / dailyGoal) * 100, 100);
+  
+  const getMotivationalMessage = (progress: number) => {
+    if (progress === 0) return "Start your daily review!";
+    if (progress < 50) return "Keep going, you're making progress!";
+    if (progress < 100) return "Almost there! Just a few more cards!";
+    return "Goal achieved! Great job! 🎉";
+  };
 
   return (
     <div>
@@ -44,7 +61,7 @@ export default function Dashboard() {
       />
 
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         <Card className="hover-lift border-border">
           <CardContent className="p-6">
             <div className="flex items-center justify-between mb-4">
@@ -56,7 +73,7 @@ export default function Dashboard() {
               </span>
             </div>
             <h3 className="font-semibold text-foreground mb-1">Total Cards</h3>
-            <p className="text-sm text-muted-foreground">+12 this week</p>
+            <p className="text-sm text-muted-foreground">+{analytics?.cardsAddedThisWeek || 0} this week</p>
           </CardContent>
         </Card>
 
@@ -86,7 +103,9 @@ export default function Dashboard() {
               </span>
             </div>
             <h3 className="font-semibold text-foreground mb-1">Accuracy</h3>
-            <p className="text-sm text-success">+5% this month</p>
+            <p className={`text-sm ${analytics?.accuracyChangeThisMonth >= 0 ? 'text-success' : 'text-destructive'}`}>
+              {analytics?.accuracyChangeThisMonth >= 0 ? '+' : ''}{Math.round(analytics?.accuracyChangeThisMonth || 0)}% this month
+            </p>
           </CardContent>
         </Card>
 
@@ -101,7 +120,25 @@ export default function Dashboard() {
               </span>
             </div>
             <h3 className="font-semibold text-foreground mb-1">Day Streak</h3>
-            <p className="text-sm text-muted-foreground">Personal best: 28</p>
+            <p className="text-sm text-muted-foreground">Personal best: {stats?.personalBestStreak || 0}</p>
+          </CardContent>
+        </Card>
+
+        <Card className="hover-lift border-border">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center">
+                <Target className="text-primary" size={20} />
+              </div>
+              <span className="text-2xl font-bold text-foreground">
+                {cardsReviewedToday}/{dailyGoal}
+              </span>
+            </div>
+            <h3 className="font-semibold text-foreground mb-1">Daily Goal</h3>
+            <Progress value={goalProgress} className="h-2 mb-2" />
+            <p className="text-sm text-muted-foreground">
+              {getMotivationalMessage(goalProgress)}
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -151,7 +188,7 @@ export default function Dashboard() {
                   </Link>
                   <div className="text-sm text-muted-foreground">
                     <Clock size={16} className="inline mr-1" />
-                    Est. 15 minutes
+                    Est. {Math.ceil((analytics?.dueToday || 0) * 0.5)} minutes
                   </div>
                 </div>
               </div>
@@ -166,17 +203,23 @@ export default function Dashboard() {
               <CardTitle className="text-lg">Upcoming Reviews</CardTitle>
             </CardHeader>
             <CardContent className="p-6 space-y-4">
-              {analytics?.topics?.slice(0, 3).map((topic: any, index: number) => (
-                <div key={topic.id} className="flex items-center justify-between p-3 bg-accent rounded-lg">
-                  <div>
-                    <p className="font-medium text-foreground">{topic.name}</p>
-                    <p className="text-sm text-muted-foreground">{topic.cardCount} cards</p>
+              {upcomingReviews && upcomingReviews.length > 0 ? (
+                upcomingReviews.slice(0, 3).map((review: any) => (
+                  <div key={review.cardId} className="flex items-center justify-between p-3 bg-accent rounded-lg">
+                    <div>
+                      <p className="font-medium text-foreground">{review.topicName}</p>
+                      <p className="text-sm text-muted-foreground line-clamp-1">{review.frontText}</p>
+                    </div>
+                    <span className="text-sm text-muted-foreground font-medium whitespace-nowrap">
+                      {review.timeUntilDue}
+                    </span>
                   </div>
-                  <span className="text-sm text-muted-foreground font-medium">
-                    {index === 0 ? "in 2 hours" : index === 1 ? "tomorrow" : "in 3 days"}
-                  </span>
+                ))
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  No upcoming reviews scheduled
                 </div>
-              ))}
+              )}
             </CardContent>
           </Card>
 
@@ -194,9 +237,11 @@ export default function Dashboard() {
                       Your success rate in "{analytics.performanceAlert.name}" has dropped to {Math.round(analytics.performanceAlert.accuracy * 100)}%. 
                       Consider reviewing fundamentals before adding new cards.
                     </p>
-                    <Button size="sm" className="bg-warning text-white hover:bg-warning/90">
-                      Review Topic
-                    </Button>
+                    <Link href={`/topic/${analytics.performanceAlert.id}`}>
+                      <Button size="sm" className="bg-warning text-white hover:bg-warning/90">
+                        Review Topic
+                      </Button>
+                    </Link>
                   </div>
                 </div>
               </CardContent>
@@ -268,7 +313,7 @@ export default function Dashboard() {
                 <span className="text-sm text-muted-foreground">Cards Reviewed</span>
                 <span className="font-semibold text-foreground">{stats?.cardsReviewed || 0} total</span>
               </div>
-              <Progress value={78} className="h-3" />
+              <Progress value={goalProgress} className="h-3" />
               
               <div className="flex items-center justify-between mt-6">
                 <span className="text-sm text-muted-foreground">Success Rate</span>
@@ -284,13 +329,13 @@ export default function Dashboard() {
                   {Math.round((stats?.totalStudyTime || 0) / 60 * 10) / 10} hrs
                 </span>
               </div>
-              <Progress value={65} className="h-3" />
+              <Progress value={Math.min((stats?.totalStudyTime || 0) / 120 * 100, 100)} className="h-3" />
             </div>
             
             <div className="mt-6 pt-6 border-t border-border">
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-2xl font-bold text-foreground">4</p>
+                  <p className="text-2xl font-bold text-foreground">{stats?.topicsMastered || 0}</p>
                   <p className="text-sm text-muted-foreground">Topics Mastered</p>
                 </div>
                 <div>
@@ -371,9 +416,11 @@ export default function Dashboard() {
                   </p>
                 </div>
               </div>
-              <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
-                Learn More
-              </Button>
+              <Link href="/analytics">
+                <Button variant="ghost" size="sm" className="text-primary hover:text-primary/80">
+                  Learn More
+                </Button>
+              </Link>
             </div>
           </div>
         </CardContent>

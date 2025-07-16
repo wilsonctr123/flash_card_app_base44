@@ -18,6 +18,7 @@ import { Image, Video, Plus } from "lucide-react";
 
 const formSchema = insertFlashcardSchema.omit({ userId: true }).extend({
   topicId: z.coerce.number().min(1, "Please select a topic"),
+  subtopicId: z.coerce.number().optional(),
   frontText: z.string().min(1, "Front text is required"),
   backText: z.string().min(1, "Back text is required"),
 });
@@ -25,11 +26,19 @@ const formSchema = insertFlashcardSchema.omit({ userId: true }).extend({
 export default function CreateCard() {
   const [frontImage, setFrontImage] = useState<string>("");
   const [backImage, setBackImage] = useState<string>("");
+  const [selectedTopicId, setSelectedTopicId] = useState<number | null>(null);
+  const [newSubtopic, setNewSubtopic] = useState<string>("");
+  const [isCreatingSubtopic, setIsCreatingSubtopic] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: topics } = useQuery({
     queryKey: ['/api/topics'],
+  });
+
+  const { data: subtopics, refetch: refetchSubtopics } = useQuery({
+    queryKey: selectedTopicId ? [`/api/topics/${selectedTopicId}/subtopics`] : ['no-subtopics'],
+    enabled: !!selectedTopicId,
   });
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,6 +51,31 @@ export default function CreateCard() {
       frontVideo: "",
       backVideo: "",
       topicId: 1, // Default to first topic
+      subtopicId: undefined,
+    },
+  });
+
+  const createSubtopicMutation = useMutation({
+    mutationFn: async ({ topicId, name }: { topicId: number; name: string }) => {
+      const response = await apiRequest("POST", `/api/topics/${topicId}/subtopics`, { name });
+      return response.json();
+    },
+    onSuccess: (data) => {
+      toast({
+        title: "Success",
+        description: "Subtopic created successfully!",
+      });
+      setNewSubtopic("");
+      setIsCreatingSubtopic(false);
+      refetchSubtopics();
+      form.setValue("subtopicId", data.id);
+    },
+    onError: () => {
+      toast({
+        title: "Error",
+        description: "Failed to create subtopic. Please try again.",
+        variant: "destructive",
+      });
     },
   });
 
@@ -51,21 +85,29 @@ export default function CreateCard() {
         ...data,
         frontImage: frontImage || null,
         backImage: backImage || null,
+        subtopicId: data.subtopicId || null,
       });
       return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Success",
         description: "Flashcard created successfully!",
       });
-      form.reset();
-      setFrontImage("");
-      setBackImage("");
+      
+      const createdTopicId = form.getValues('topicId');
+      
+      // Invalidate all flashcard-related queries
       queryClient.invalidateQueries({ queryKey: ['/api/flashcards'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/flashcards/by-topic/${createdTopicId}`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flashcards/due'] });
       queryClient.invalidateQueries({ queryKey: ['/api/analytics/dashboard'] });
       queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
       queryClient.invalidateQueries({ queryKey: ['/api/topics-with-stats'] });
+      
+      form.reset();
+      setFrontImage("");
+      setBackImage("");
     },
     onError: () => {
       toast({
@@ -77,7 +119,6 @@ export default function CreateCard() {
   });
 
   const onSubmit = (data: z.infer<typeof formSchema>) => {
-    console.log("Form submitted with data:", data);
     createCardMutation.mutate(data);
   };
 
@@ -103,7 +144,15 @@ export default function CreateCard() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Topic</FormLabel>
-                      <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString() || ""}>
+                      <Select 
+                        onValueChange={(value) => {
+                          const topicId = parseInt(value);
+                          field.onChange(topicId);
+                          setSelectedTopicId(topicId);
+                          form.setValue("subtopicId", undefined);
+                        }} 
+                        value={field.value?.toString() || ""}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a topic" />
@@ -121,6 +170,93 @@ export default function CreateCard() {
                     </FormItem>
                   )}
                 />
+
+                {selectedTopicId && (
+                  <FormField
+                    control={form.control}
+                    name="subtopicId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Subtopic (Optional)</FormLabel>
+                        {!isCreatingSubtopic ? (
+                          <div className="space-y-2">
+                            <Select 
+                              onValueChange={(value) => {
+                                if (value === "new") {
+                                  setIsCreatingSubtopic(true);
+                                } else {
+                                  field.onChange(parseInt(value));
+                                }
+                              }} 
+                              value={field.value?.toString() || ""}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select a subtopic" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {subtopics?.map((subtopic: any) => (
+                                  <SelectItem key={subtopic.id} value={subtopic.id.toString()}>
+                                    {subtopic.name}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="new">
+                                  <Plus size={14} className="inline mr-2" />
+                                  Create new subtopic
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ) : (
+                          <div className="flex gap-2">
+                            <Input
+                              placeholder="Enter subtopic name"
+                              value={newSubtopic}
+                              onChange={(e) => setNewSubtopic(e.target.value)}
+                              onKeyPress={(e) => {
+                                if (e.key === 'Enter' && newSubtopic.trim()) {
+                                  e.preventDefault();
+                                  createSubtopicMutation.mutate({ 
+                                    topicId: selectedTopicId, 
+                                    name: newSubtopic.trim() 
+                                  });
+                                }
+                              }}
+                            />
+                            <Button
+                              type="button"
+                              size="sm"
+                              onClick={() => {
+                                if (newSubtopic.trim()) {
+                                  createSubtopicMutation.mutate({ 
+                                    topicId: selectedTopicId, 
+                                    name: newSubtopic.trim() 
+                                  });
+                                }
+                              }}
+                              disabled={!newSubtopic.trim() || createSubtopicMutation.isPending}
+                            >
+                              Create
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setIsCreatingSubtopic(false);
+                                setNewSubtopic("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        )}
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
               </CardContent>
             </Card>
 

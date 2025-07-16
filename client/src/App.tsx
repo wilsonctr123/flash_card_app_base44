@@ -1,8 +1,9 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SettingsProvider } from "@/contexts/SettingsContext";
 import { useAuth } from "@/hooks/useAuth";
 import Dashboard from "@/pages/Dashboard";
 import CreateCard from "@/pages/CreateCard";
@@ -17,6 +18,12 @@ import Sidebar from "@/components/Sidebar";
 
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
+
+  // Always show landing page for /landing route
+  if (location === '/landing') {
+    return <Landing />;
+  }
 
   if (isLoading) {
     return (
@@ -52,10 +59,12 @@ function Router() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Router />
-      </TooltipProvider>
+      <SettingsProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Router />
+        </TooltipProvider>
+      </SettingsProvider>
     </QueryClientProvider>
   );
 }

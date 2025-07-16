@@ -1,8 +1,21 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Brain, Zap, Target, Users, ArrowRight, CheckCircle, Play } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function Landing() {
+  const [location, setLocation] = useLocation();
+  const isDev = import.meta.env.DEV;
+  
+  const handleAuth = () => {
+    if (isDev) {
+      // In development, since auth is always on, just go to dashboard
+      setLocation('/');
+    } else {
+      // In production, use Replit auth
+      window.location.href = '/api/login';
+    }
+  };
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       {/* Hero Section */}
@@ -15,7 +28,7 @@ export default function Landing() {
           <Button 
             variant="ghost" 
             className="text-white/80 hover:text-white hover:bg-white/10"
-            onClick={() => window.location.href = '/api/login'}
+            onClick={handleAuth}
           >
             Sign In
           </Button>
@@ -41,7 +54,7 @@ export default function Landing() {
               </div>
               <div className="space-x-4">
                 <Button 
-                  onClick={() => window.location.href = '/api/login'}
+                  onClick={handleAuth}
                   size="lg" 
                   className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 px-8 py-6 text-lg font-semibold"
                 >
@@ -51,7 +64,7 @@ export default function Landing() {
                 <Button 
                   variant="outline" 
                   size="lg"
-                  className="border-white/20 text-white hover:bg-white/10 px-8 py-6 text-lg"
+                  className="bg-white/50 backdrop-blur-sm border-white/50 text-black hover:bg-white/70 px-8 py-6 text-lg font-semibold"
                   onClick={() => window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank')}
                 >
                   <Play className="mr-2 h-5 w-5" />
@@ -151,7 +164,7 @@ export default function Landing() {
                         <p className="text-gray-300 mt-2">Create your account and begin learning today</p>
                       </div>
                       <Button 
-                        onClick={() => window.location.href = '/api/login'}
+                        onClick={handleAuth}
                         className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 py-6 text-lg font-semibold"
                       >
                         Get Started for Free

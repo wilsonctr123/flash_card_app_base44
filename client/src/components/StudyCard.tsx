@@ -10,22 +10,39 @@ interface StudyCardProps {
   onRate: (rating: number) => void;
   currentIndex: number;
   totalCards: number;
+  showAnswerImmediately?: boolean;
+  cardAnimations?: boolean;
 }
 
-export default function StudyCard({ card, onRate, currentIndex, totalCards }: StudyCardProps) {
-  const [isFlipped, setIsFlipped] = useState(false);
+export default function StudyCard({ 
+  card, 
+  onRate, 
+  currentIndex, 
+  totalCards, 
+  showAnswerImmediately = false,
+  cardAnimations = true 
+}: StudyCardProps) {
+  const [isFlipped, setIsFlipped] = useState(showAnswerImmediately);
 
   const handleRate = (rating: number) => {
-    onRate(rating);
     setIsFlipped(false);
+    // Small delay to show the flip animation before moving to next card
+    setTimeout(() => {
+      onRate(rating);
+    }, 300);
   };
 
   return (
-    <Card className="gradient-card border-border overflow-hidden hover-lift">
+    <Card 
+      className={`gradient-card border-border overflow-hidden hover-lift cursor-pointer ${
+        cardAnimations ? 'transition-transform duration-200' : ''
+      }`}
+      onClick={() => !isFlipped && setIsFlipped(true)}
+    >
       <CardContent className="p-6">
         <div className="flex items-center justify-between mb-4">
           <Badge variant="secondary" className="bg-primary/10 text-primary">
-            {card.topic.name}
+            {card?.topic?.name || 'Unknown Topic'}
           </Badge>
           <Badge variant="outline">
             Due Now
@@ -34,13 +51,14 @@ export default function StudyCard({ card, onRate, currentIndex, totalCards }: St
         
         <div className="mb-6 min-h-[200px] flex items-center justify-center">
           <div 
-            className="cursor-pointer text-center w-full"
-            onClick={() => setIsFlipped(!isFlipped)}
+            className={`text-center w-full ${
+              cardAnimations ? 'transition-all duration-300 ease-in-out' : ''
+            }`}
           >
             {!isFlipped ? (
-              <div>
+              <div className={cardAnimations ? 'animate-fade-in' : ''}>
                 <h3 className="text-2xl font-bold text-foreground mb-2">
-                  {card.frontText}
+                  {card?.frontText || 'No question'}
                 </h3>
                 {card.frontImage && (
                   <img 
@@ -49,12 +67,14 @@ export default function StudyCard({ card, onRate, currentIndex, totalCards }: St
                     className="max-w-full max-h-40 mx-auto rounded-lg mb-2"
                   />
                 )}
-                <p className="text-muted-foreground">Click to reveal answer</p>
+                {!showAnswerImmediately && (
+                  <p className="text-muted-foreground">Click to reveal answer</p>
+                )}
               </div>
             ) : (
-              <div>
+              <div className={cardAnimations ? 'animate-fade-in' : ''}>
                 <h3 className="text-2xl font-bold text-foreground mb-2">
-                  {card.backText}
+                  {card?.backText || 'No answer'}
                 </h3>
                 {card.backImage && (
                   <img 
@@ -69,7 +89,7 @@ export default function StudyCard({ card, onRate, currentIndex, totalCards }: St
         </div>
         
         {isFlipped && (
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
             <div className="flex space-x-3">
               <Button 
                 onClick={() => handleRate(1)}
