@@ -58,10 +58,10 @@ app.use((req, res, next) => {
   }
 
   // Serve the app - use different port in development if 5000 is taken
-  const port = process.env.PORT || (process.env.NODE_ENV === 'development' ? 5000 : 5000);
+  const port = process.env.PORT || (process.env.NODE_ENV === 'development' ? 3001 : 5000);
   server.listen({
     port,
-    host: "0.0.0.0", // Use 0.0.0.0 for cloud development environments
+    host: "127.0.0.1", // Use localhost for development
   }, () => {
     log(`serving on port ${port}`);
   });
