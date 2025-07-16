@@ -255,124 +255,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Study session routes
-  app.post("/api/study-sessions", finalAuthMiddleware, async (req: any, res) => {
-    try {
-      const userId = req.user.claims.sub;
-      const sessionData = insertStudySessionSchema.parse({ ...req.body, userId });
-      const session = await storage.createStudySession(sessionData);
-
-      // Update card based on study session
-      const rating = sessionData.rating;
-      const card = await storage.getFlashcard(sessionData.cardId);
-      if (card) {
-        // Calculate new interval and next review date using spaced repetition algorithm
-        let newInterval = card.interval;
-        let newEaseFactor = card.easeFactor;
-        
-        if (rating >= 3) { // Good or Easy
-          newInterval = Math.round(card.interval * card.easeFactor);
-          if (rating === 4) { // Easy
-            newEaseFactor = card.easeFactor + 0.15;
-          }
-        } else if (rating === 2) { // Hard
-          newInterval = Math.max(1, Math.round(card.interval * 1.2));
-          newEaseFactor = Math.max(1.3, card.easeFactor - 0.15);
-        } else { // Again
-          newInterval = 1;
-          newEaseFactor = Math.max(1.3, card.easeFactor - 0.2);
-        }
-
-        const nextReview = new Date();
-        nextReview.setDate(nextReview.getDate() + newInterval);
-
-        // Update success rate
-        const newReviewCount = card.reviewCount + 1;
-        const successCount = Math.round(card.successRate * card.reviewCount) + (rating >= 3 ? 1 : 0);
-        const newSuccessRate = successCount / newReviewCount;
-
-        await storage.updateFlashcard(sessionData.cardId, {
-          interval: newInterval,
-          easeFactor: newEaseFactor,
-          nextReview,
-          reviewCount: newReviewCount,
-          successRate: newSuccessRate,
-          difficulty: Math.max(0, Math.min(4, card.difficulty + (rating < 3 ? 1 : -1)))
-        });
-      }
-
-      // Update user stats
-      let userStats = await storage.getUserStats(userId);
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      
-      if (!userStats) {
-        // Create initial stats if they don't exist
-        const createData: any = {
-          userId,
-          totalCards: await storage.getFlashcards(userId).then(cards => cards.length),
-          cardsReviewed: 1,
-          studyStreak: 1,
-          lastStudyDate: new Date(),
-          totalStudyTime: Math.round(sessionData.responseTime / 60000), // Convert ms to minutes
-          averageAccuracy: rating >= 3 ? 1 : 0,
-        };
-        
-        // Only add personalBestStreak if we're using memory storage
-        if (process.env.NODE_ENV === 'development' && !process.env.DATABASE_URL) {
-          createData.personalBestStreak = 1;
-        }
-        
-        userStats = await storage.createUserStats(createData);
-      } else {
-        // Calculate new average accuracy
-        const totalRatings = userStats.cardsReviewed + 1;
-        const successfulRatings = Math.round(userStats.averageAccuracy * userStats.cardsReviewed) + (rating >= 3 ? 1 : 0);
-        const newAverageAccuracy = successfulRatings / totalRatings;
-        
-        // Calculate study streak
-        let newStreak = userStats.studyStreak;
-        if (userStats.lastStudyDate) {
-          const lastStudy = new Date(userStats.lastStudyDate);
-          lastStudy.setHours(0, 0, 0, 0);
-          const daysSinceLastStudy = Math.floor((today.getTime() - lastStudy.getTime()) / (1000 * 60 * 60 * 24));
-          
-          if (daysSinceLastStudy === 0) {
-            // Already studied today, keep current streak
-            newStreak = userStats.studyStreak;
-          } else if (daysSinceLastStudy === 1) {
-            // Studied yesterday, increment streak
-            newStreak = userStats.studyStreak + 1;
-          } else {
-            // Missed a day, reset streak
-            newStreak = 1;
-          }
-        }
-        
-        const updateData: any = {
-          cardsReviewed: userStats.cardsReviewed + 1,
-          studyStreak: newStreak,
-          lastStudyDate: new Date(),
-          totalStudyTime: userStats.totalStudyTime + Math.round(sessionData.responseTime / 60000),
-          averageAccuracy: newAverageAccuracy,
-          totalCards: await storage.getFlashcards(userId).then(cards => cards.length),
-        };
-        
-        // Only add personalBestStreak if the column exists
-        if ('personalBestStreak' in userStats) {
-        }
-      }
-    }
-  }
-  )
   app.post("/api/study-sessions", finalAuthMiddleware, asyncHandler(async (req: any, res) => {
     const userId = validateAuth(req);
     const sessionData = ValidationService.validateSchema(insertStudySessionSchema, { ...req.body, userId });
     const session = await studySessionService.createStudySession(sessionData);
     res.json(session);
   }));
-
-  // Add error handler middleware
-  app.use(createErrorHandler());
 
   // User stats routes
   app.get("/api/user-stats", finalAuthMiddleware, async (req: any, res) => {
