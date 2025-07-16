@@ -359,6 +359,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Only add personalBestStreak if the column exists
         if ('personalBestStreak' in userStats) {
+        }
+      }
+    }
+  }
+  )
   app.post("/api/study-sessions", finalAuthMiddleware, asyncHandler(async (req: any, res) => {
     const userId = validateAuth(req);
     const sessionData = ValidationService.validateSchema(insertStudySessionSchema, { ...req.body, userId });
