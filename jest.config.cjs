@@ -11,18 +11,9 @@ module.exports = {
   },
   transform: {
     '^.+\\.tsx?$': ['ts-jest', {
-      tsconfig: {
-        jsx: 'react',
-        esModuleInterop: true,
-        moduleResolution: 'node',
-        allowSyntheticDefaultImports: true,
-      },
+      useESM: true,
+      tsconfig: '<rootDir>/tsconfig.json',
     }],
-  },
-  globals: {
-    'ts-jest': {
-      useESM: false,
-    },
   },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   collectCoverageFrom: [
@@ -37,12 +28,24 @@ module.exports = {
       displayName: 'server',
       testEnvironment: 'node',
       testMatch: ['<rootDir>/tests/server/**/*.test.ts', '<rootDir>/server/**/*.test.ts'],
+      transform: {
+        '^.+\\.tsx?$': ['ts-jest', {
+          useESM: true,
+          tsconfig: '<rootDir>/tsconfig.json',
+        }],
+      },
     },
     {
       displayName: 'client',
       testEnvironment: 'jsdom',
       testMatch: ['<rootDir>/tests/client/**/*.test.{ts,tsx}', '<rootDir>/client/**/*.test.{ts,tsx}'],
       setupFilesAfterEnv: ['<rootDir>/tests/client/setup.ts'],
+      transform: {
+        '^.+\\.tsx?$': ['ts-jest', {
+          useESM: true,
+          tsconfig: '<rootDir>/tsconfig.json',
+        }],
+      },
     },
   ],
 };
