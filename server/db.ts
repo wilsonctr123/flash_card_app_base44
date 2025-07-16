@@ -15,7 +15,10 @@ console.log("🔧 DATABASE_URL format:", process.env.DATABASE_URL?.substring(0, 
 
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionTimeoutMillis: 5000,
+  idleTimeoutMillis: 10000,
+  max: 10
 });
 
 console.log("🔧 Creating drizzle instance...");
@@ -30,3 +33,27 @@ pool.on('connect', () => {
 pool.on('error', (err) => {
   console.error('❌ Database connection error:', err);
 });
+
+// Test the connection immediately
+(async () => {
+  try {
+    console.log('🔧 Testing database connection...');
+    const client = await pool.connect();
+    console.log('✅ Database connection test successful');
+    
+    // Test if users table exists
+    const result = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'users'
+      );
+    `);
+    
+    console.log('🔧 Users table exists:', result.rows[0].exists);
+    client.release();
+  } catch (error) {
+    console.error('❌ Database connection test failed:', error.message);
+    console.error('❌ Full error:', error);
+  }
+})();
